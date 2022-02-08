@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="author" content="Chris Lavell">
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+    </head>
+    <body>
+        <script>
+            function download(filename, text) {
+                var element = document.createElement('a');
+                element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+                element.setAttribute('download', filename);
+                element.innerHTML = filename
+               
+                document.body.appendChild(element);
+            }
+
+            function setStatus(feature,status){
+                feature["properties"]["status"] = status
+            }
+
+            function setAll(geodata,status) {
+                for(let feature of geodata){
+                    setStatus(feature,status)
+                }
+            }
+
+            function createLinks(dat){
+                for (let i=0; i<dat.length; i++){
+
+                    //once we have the updated information we want to export the new geojson so that tableau can access it
+                    //first get a good name by using the status string
+                    var name = dat[i]["features"][i]["properties"]["status"] + ".geojson"
+                    console.log(name)
+                    geoJson = JSON.stringify(dat[i]) //https://www.w3schools.com/js/js_json_stringify.asp
+                        download(name,geoJson)
+                }
+            }
+            //create global variables to store the data in to verify with console after script is run
+            var dat
+            var geoJson
+
+            //create a variable with words to enter into the status field
+            var statuses = ["in use", "abandoned"]
+            
+                //to read in multiple data files into d3 looked up the answer here: 
+                //https://stackoverflow.com/questions/21842384/importing-data-from-multiple-csv-files-in-d3
+                Promise.all([
+                    d3.json("mains (1).geojson"),
+                    d3.json("abandoned_mains.geojson"),
+                    //in use mains == data[0], 
+                    //abandoned mains == data[1] 
+                    ]).then(function(data) {
+                        for(let i=0; i<data.length; i++){
+                            setAll(data[i]["features"],statuses[i])
+                        }
+                       
+                        dat = data
+                        
+                        console.log(data)
+                        createLinks(dat)
+
+                    })
+
+                   
+        </script>

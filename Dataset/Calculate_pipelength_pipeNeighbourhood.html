@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="author" content="Chris Lavell">
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+    </head>
+    <body>
+        <script>
+            function download(filename, text) {
+                var element = document.createElement('a');
+                element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+                element.setAttribute('download', filename);
+                element.innerHTML = filename
+               
+                document.body.appendChild(element);
+            }
+
+            var dat
+            var geoJson
+            
+                //to read in multiple data files into d3 looked up the answer here: 
+                //https://stackoverflow.com/questions/21842384/importing-data-from-multiple-csv-files-in-d3
+                Promise.all([
+                    d3.json("dataForLocatingWatermains/local-area-boundary.geojson"),
+                    d3.json("dataForLocatingWatermains/abandoned-water-mains.geojson"),
+                    d3.json("dataForLocatingWatermains/water-pressure-zones.geojson")
+                    //neighbourhood boundaries == data[0], 
+                    //the water mains == data[1] 
+                    //and the watter pressure zones == data[2]
+                    ]).then(function(data) {
+                                //do a for in loop for each piece of pipe
+                        var index = 1;
+                        for(let pipesegment of data[1]["features"]) {
+                            //   console.log(i["geometry"]["coordinates"][0])
+                            //need an identifier for each pipe segment
+                            pipesegment["properties"]["identifier"] = index++
+
+                            //if the pipesegment only has a point, convert it to a linstring
+                            if(pipesegment["geometry"]["type"] == "Point"){
+                                console.log("hahaah")
+                                pipesegment["geometry"]["type"] = "LineString"
+                                
+                                //need to have two points for it to be a LineString, so just put two of the same point in.
+                                newCoordinates = [pipesegment["geometry"]["coordinates"],pipesegment["geometry"]["coordinates"]]
+                                pipesegment["geometry"]["coordinates"] = newCoordinates
+
+                            }
+
+                            //want the length of each pipesegment
+                            pipesegment["properties"]["length"] = d3.geoLength(pipesegment)
+
+                             //want to check for the first point in the geometry if it is inside of a particular area
+                            for(let neighbourhood of data[0]["features"]){
+                                // console.log(d3.geoContains(j, i["geometry"]["coordinates"][0]))
+                                //if the first point of the coordinates point is found to be in the area, set a new property neighbourhood to the short name of the neighbourhood
+                                if(d3.geoContains(neighbourhood, pipesegment["geometry"]["coordinates"][0])){//using geocontains() discovered here: https://stackoverflow.com/questions/33802197/is-it-possible-to-determine-if-a-geojson-point-is-inside-a-geojson-polygon-usingd
+                                    pipesegment["properties"]["neighbourhood"] = neighbourhood["properties"]["mapid"]
+                                    break;
+                                }
+                            }
+                                //next we'll do a for loop for the pressure zones
+                            for (let pressureZone of data[2]["features"]) {
+                                //if the first point of the coordinates point is found to be in the area, set a new property pressure_zone with the pressure_zone_number
+                                if(d3.geoContains(pressureZone, pipesegment["geometry"]["coordinates"][0])){//using geocontains() discovered here: https://stackoverflow.com/questions/33802197/is-it-possible-to-determine-if-a-geojson-point-is-inside-a-geojson-polygon-usingd
+                                    pipesegment["properties"]["pressure_zone_number"] = pressureZone["properties"]["pressure_zone_number"]
+                                    break;
+                                }
+                            }
+
+                        }
+                            
+                        //once we have the updated information we want to export the new geojson so that tableau can access it
+                        geoJson = JSON.stringify(data[1]) //https://www.w3schools.com/js/js_json_stringify.asp
+                        download("mains.geojson",geoJson)
+                        
+
+                        dat = data
+                       
+                      
+                      
+                    // console.log(data[0])  // first row of cities
+                    // console.log(data[1][0])  // first row of animals
+                 });
+
+
+                //the below code was used to test geoContains funcction
+                // var myzone = {
+                //             "type": "Feature",
+                //             "geometry": {
+                //                 "type": "Polygon",
+                //                 "coordinates": [[[0,0],[0,2],[2,2],[2,0],[0,0]]]
+                //             },
+                //             "properties": {
+                //                 "name":"myzone"
+                //             }
+                //         }
+                        
+                //         var mypoint = [1,1.9];
+                //         console.log(d3.geoContains(myzone, mypoint));
+
+                        // dat.features.forEach(function(d) {
+                        //     context.beginPath();
+                        //     context.fillStyle = state.clickedLocation && d3.geoContains(d, state.clickedLocation) ? 'red' : '#aaa';
+                        //     geoGenerator(d);
+                        //     context.fill();
+                        // })
+        </script>
+    </body>
+</html>
