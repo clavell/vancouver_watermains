@@ -1,0 +1,3 @@
+# vancouver_watermains
+
+The main product of this project is an [interactive tableau dashboard](https://github.com/clavell/vancouver_watermains/blob/main/Visualization/Vancouver_water_mains.twbx) viewable with [Tableau reader](https://www.tableau.com/products/reader/download) (free download). It is multiple visualizations of vancouver open watermains data modified using my own [D3.js scripts](https://github.com/clavell/vancouver_watermains/tree/main/Dataset). Please see the [report here](https://github.com/clavell/vancouver_watermains/blob/main/Documentation/Report_lavell20422.pdf), and for an explanation of the data manipulation scripts [see here](https://github.com/clavell/vancouver_watermains/blob/main/Dataset/Data%20sources.pdf).
